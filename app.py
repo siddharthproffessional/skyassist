@@ -34,5 +34,6 @@ pages = [
     st.Page("views/coordinator.py", title="Coordinator portal", icon="🧑‍✈️", url_path="coordinator"),
     st.Page("views/operations.py", title="Operations overview", icon="📊", url_path="operations"),
     st.Page("views/occ.py", title="Operations Control Centre", icon="🛫", url_path="occ"),
+    st.Page("views/twin.py", title="3D airport twin", icon="🌐", url_path="twin"),
 ]
 st.navigation(pages, position="hidden").run()

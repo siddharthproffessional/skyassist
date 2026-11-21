@@ -29,6 +29,7 @@ with c3:
        '<div class="sa-muted">New in 3.0. Vulnerable-first rebooking, crew duty legality, maintenance sign-off '
        'validation, passenger + baggage consistency and stale-approval protection, with live demos.</div></div>')
     st.page_link("views/occ.py", label="Open OCC →", icon="🛫", use_container_width=True)
+    st.page_link("views/twin.py", label="Open the 3D airport twin →", icon="🌐", use_container_width=True)
 st.caption("Demo sign-in: passenger PNR1A2 / demo123 · coordinator sarah / coord123 (synthetic demo accounts).")
 st.caption("All flight, gate and passenger data in this build is synthetic demonstration data. "
            "No live flight data, live positioning or real dispatch system is connected.")
