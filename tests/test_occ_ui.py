@@ -70,3 +70,13 @@ def test_live_journey_survives_cleared_run(ops):
     at.session_state["r3_burst"] = {"batch_id": "BURST-GONE", "results": [], "wall_ms": 0, "workers": 4, "ai_calls": 0}
     at.run()
     assert not at.exception
+
+
+def test_twin_page_renders_from_live_data(ops):
+    from services.ops import journey
+    from streamlit.testing.v1 import AppTest
+    journey.process_alert(ops, journey.SAMPLES["Cancellation (safe, automatic)"])
+    at = AppTest.from_file(os.path.join(ROOT, "views", "twin.py"), default_timeout=60).run()
+    assert not at.exception
+    html = " ".join(m.value for m in at.markdown)
+    assert "PAX REBOOKED<b class=\"g\">40" in html and "SA-560" in html
