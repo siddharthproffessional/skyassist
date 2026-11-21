@@ -26,11 +26,11 @@ except ImportError:  # rules-only mode still works
 
 from db import tx, utcnow
 
-TIMEOUT = float(os.getenv("SKYASSIST_LLM_TIMEOUT", "8"))
+TIMEOUT = float(os.getenv("SKYASSIST_LLM_TIMEOUT", "12"))
 MAX_RETRIES = int(os.getenv("SKYASSIST_LLM_RETRIES", "1"))
 BREAK_AFTER, BREAK_FOR = 3, 60.0
-MODELS = {"gemini": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-          "groq": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+MODELS = {"gemini": os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+          "groq": os.getenv("GROQ_MODEL", "openai/gpt-oss-20b"),
           "ollama": os.getenv("OLLAMA_MODEL", "qwen3")}
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 
@@ -135,9 +135,11 @@ def _call_provider(p, system, user, json_mode):
         time.sleep(min(TIMEOUT, 2))
         raise Transient("SIMULATED slow response (timeout)")
     if p == "gemini":
-        cfg = {"temperature": 0, "maxOutputTokens": 400}
+        cfg = {"temperature": 0, "maxOutputTokens": 1024}
         if "2.5-flash" in MODELS[p]:
             cfg["thinkingConfig"] = {"thinkingBudget": 0}   # extraction needs no reasoning tokens: cheaper, faster
+        elif MODELS[p].startswith("gemini-3"):
+            cfg["thinkingConfig"] = {"thinkingLevel": "low"}  # Gemini 3 thinks by default; keep it short
         if json_mode:
             cfg["responseMimeType"] = "application/json"
         d = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{MODELS[p]}:generateContent",
@@ -151,8 +153,10 @@ def _call_provider(p, system, user, json_mode):
         u = d.get("usageMetadata", {})
         return text, u.get("promptTokenCount", 0), u.get("candidatesTokenCount", 0) + u.get("thoughtsTokenCount", 0)
     if p == "groq":
-        body = {"model": MODELS[p], "temperature": 0, "max_tokens": 400,
+        body = {"model": MODELS[p], "temperature": 0, "max_tokens": 1500,
                 "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+        if "gpt-oss" in MODELS[p]:
+            body["reasoning_effort"] = "low"     # reasoning tokens count against max_tokens; keep room for the JSON
         if json_mode:
             body["response_format"] = {"type": "json_object"}
         d = _post("https://api.groq.com/openai/v1/chat/completions", json=body,
