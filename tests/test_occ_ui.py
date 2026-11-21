@@ -62,3 +62,11 @@ def test_round3_tabs_render_and_send_alert(ops):
     assert not at.exception
     from db import query_one
     assert query_one("SELECT status FROM journey_runs")["status"] == "COMPLETED"
+
+
+def test_live_journey_survives_cleared_run(ops):
+    at = _occ(ops)
+    at.session_state["r3_last"] = {"run_id": "RUN-GONE", "duplicate": False}
+    at.session_state["r3_burst"] = {"batch_id": "BURST-GONE", "results": [], "wall_ms": 0, "workers": 4, "ai_calls": 0}
+    at.run()
+    assert not at.exception

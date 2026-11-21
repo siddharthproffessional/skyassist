@@ -70,8 +70,11 @@ def render_journey(p):
             except OpsError as e:
                 st.error(str(e))
     r = st.session_state.get("r3_last")
-    if r:
-        show_run(journey.get_run(r["run_id"]) | {"duplicate": r.get("duplicate")})
+    full = journey.get_run(r["run_id"]) if r else None
+    if r and full is None:          # run cleared by a demo reset or an app restart
+        st.session_state.pop("r3_last", None)
+    if full:
+        show_run(full | {"duplicate": r.get("duplicate")})
     st.markdown("#### Paused for approval (human in the loop)")
     st.caption("Safe default: if nobody approves within the time limit, the action expires and nothing changes.")
     pend = journey.pending_approvals()
@@ -114,6 +117,8 @@ def render_burst(p):
         with st.spinner("Running 12 alerts on 4 workers…"):
             st.session_state["r3_burst"] = burst.run_burst(p, fresh=fresh)
     b = st.session_state.get("r3_burst")
+    if b and not query("SELECT 1 x FROM journey_runs WHERE batch_id=? LIMIT 1", (b["batch_id"],)):
+        b = None                    # burst cleared by a demo reset
     if b:
         df = pd.DataFrame(b["results"])
         ok = df["status"].str.contains("COMPLETED|PAUSED|BLOCKED|REJECTED|DUPLICATE|REFUSED").sum()
